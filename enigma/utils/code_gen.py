@@ -181,7 +181,7 @@ class CodeGen:
 
     def export_csv(self, dest: Path = None):
         """Save table to disk."""
-        if not self.df:
+        if self.df is None:
             self.build_csv()
         if dest is None:
             dest = Path(__file__).parent.parent.joinpath("tables", "default.csv")
