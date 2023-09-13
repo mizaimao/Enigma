@@ -7,10 +7,11 @@ A code page would contain:
     4. plugboard settings;
     5. indicators (no idea what this is and it not seems to be used).
 """
-
-from typing import Dict, List
+from pathlib import Path
+from typing import Any, Dict, List
 
 import numpy as np
+import pandas as pd
 
 DAYS: int = 31
 ROTOR_NAMES: Dict[int, str] = {
@@ -59,6 +60,9 @@ class CodeGen:
         self.alignments: List[List[int]] = self._gen_rotor_alignments(rotor_slots)
         self.plugs: Dict[int, int] = self._gen_plugs(n_plugs)
         self.indicators: List[List[int]] = self._gen_indicators(i_groups)
+
+        # DataFrame to keep the record.
+        self.df: pd.DataFrame = self.build_csv()
 
     def _gen_rotors(self, n_rotors: int, rotor_slots: int) -> List[List[int]]:
         """Generate a list for what rotors to use each day."""
@@ -132,18 +136,44 @@ class CodeGen:
             print(breaker.join([date, rotors, alignments, plugs, indicators]))
 
         # Print header line.
-        header: str = "DAY" + " " * 5 + "ROTORS" + " " * 7 + "RINGS" + " " * 11 + "PLUGS" + " "* 13 + "INDICATORS" + " " * 2
-        print("-" * len(header))
+        header: str = " " * 0 + "DAY" + " " * 5 + "ROTORS" + " " * 7 + "RINGS" + " " * 11 + "PLUGS" + " "* 13 + "INDICATORS" + " " * 2
+        divider: str = "-" * len(header)
+        print(divider)
         print(header)
-        print("-" * len(header))
+        print(divider)
 
         for day in range(self.n_dates):
             print_row(day)
+        print(divider)
 
+    def build_csv(self):
+        """Make a table version of generated info."""
+        rows: List[Dict[str, Any]] = []
+        for day in range(self.n_dates):
+            row: Dict[str, Any] = {
+                "day": self.n_dates - day,
+                "rotors": self.rotors[day],
+                "rings": self.alignments[day],
+                "plugs": self.plugs[day],
+                "indicators": self.indicators[day]
+            }
+            rows.append(row.copy())
+        self.df = pd.DataFrame(rows)
 
-
+    def export_csv(self, dest: Path = None):
+        """Save table to disk."""
+        if not self.df:
+            self.build_csv()
+        if dest is None:
+            dest = Path(__file__).parent.parent.joinpath("tables", "default.csv")
+        dest = Path(dest)
+        print(f"Saving csv to {dest}...")
+        self.df.to_csv(dest)
+        
+        
 
 if __name__ == "__main__":
     gen = CodeGen(seed=42, n_rotors=5, rotor_slots=3, extended=False)
     gen.print_table_terminal()
+    gen.export_csv()
 
