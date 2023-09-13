@@ -1,6 +1,7 @@
 # standard packages
 setuptools
 numpy
+pandas
 tqdm
 
 # linting
