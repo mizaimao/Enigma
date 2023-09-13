@@ -54,7 +54,7 @@ class CodeGen:
         self.rng: np.random._generator.Generator = np.random.default_rng(seed)
         self.n_dates: int = DAYS  # Normally 31 days.
         self.ranges: List[int] = list(range(128) if extended else range(65, 91))
-        
+
         # Call each generation functions and get corresponding codes.
         self.rotors: List[List[int]] = self._gen_rotors(n_rotors, rotor_slots)
         self.alignments: List[List[int]] = self._gen_rotor_alignments(rotor_slots)
@@ -72,18 +72,16 @@ class CodeGen:
             self.rng.shuffle(available_rotors)
             rotors.append(available_rotors[:rotor_slots])
         return rotors
-    
+
     def _gen_rotor_alignments(self, rotor_slots: int) -> List[List[int]]:
         """Rotor positions."""
         alignments: List[List[int]] = []
         available_keys: List[int] = self.ranges.copy()
 
         for _ in range(self.n_dates):
-            alignments.append(
-                self.rng.choice(available_keys, rotor_slots)
-            )
+            alignments.append(self.rng.choice(available_keys, rotor_slots))
         return alignments
-    
+
     def _gen_plugs(self, n_plugs: int) -> List[Dict[int, int]]:
         """Generate requested pair of switches."""
         plugs: List[Dict[int, int]] = []
@@ -96,10 +94,10 @@ class CodeGen:
                 key_1: int = available_keys.pop()
 
                 plugs[-1][key_0] = key_1
-            
+
             assert len(plugs[-1]) == n_plugs
         return plugs
-    
+
     def _gen_indicators(self, i_groups: int) -> List[List[int]]:
         """
         Generate requested number of indicator groups. Each group comes with 3 characters.
@@ -108,7 +106,9 @@ class CodeGen:
         """
         indicators: List[List[int]] = []
         available_keys: List[int] = self.ranges.copy()
-        offset: int = 32 if len(available_keys) == 26 else 0  # "A" and "a" has a dist 32 in ascii table.
+        offset: int = (
+            32 if len(available_keys) == 26 else 0
+        )  # "A" and "a" has a dist 32 in ascii table.
 
         for _ in range(self.n_dates):
             day_group: List[int] = []
@@ -118,9 +118,10 @@ class CodeGen:
             indicators.append(day_group.copy())
 
         return indicators
-        
+
     def print_table_terminal(self):
         """Print the generated table to terminal."""
+
         def print_row(i: int):
             """Print info for each day."""
             breaker: str = " " * 4
@@ -129,14 +130,32 @@ class CodeGen:
             date: str = "{:02d}".format(self.n_dates - i)
             rotors: str = " ".join([ROTOR_NAMES[r] for r in self.rotors[i]])
             rotors += " " * (rotor_string_len - len(rotors))  # Add right padding.
-            alignments: str = " ".join(["{:02d}".format(r + 1) for r in self.alignments[i]])
-            plugs: str = " ".join([f"{chr(key1)}{chr(key2)}" for key1, key2 in self.plugs[i].items()])
-            indicators: str = " ".join([f"{chr(i1)}{chr(i2)}{chr(i3)}" for i1, i2, i3 in self.indicators[i]])
-            
+            alignments: str = " ".join(
+                ["{:02d}".format(r + 1) for r in self.alignments[i]]
+            )
+            plugs: str = " ".join(
+                [f"{chr(key1)}{chr(key2)}" for key1, key2 in self.plugs[i].items()]
+            )
+            indicators: str = " ".join(
+                [f"{chr(i1)}{chr(i2)}{chr(i3)}" for i1, i2, i3 in self.indicators[i]]
+            )
+
             print(breaker.join([date, rotors, alignments, plugs, indicators]))
 
         # Print header line.
-        header: str = " " * 0 + "DAY" + " " * 5 + "ROTORS" + " " * 7 + "RINGS" + " " * 11 + "PLUGS" + " "* 13 + "INDICATORS" + " " * 2
+        header: str = (
+            " " * 0
+            + "DAY"
+            + " " * 5
+            + "ROTORS"
+            + " " * 7
+            + "RINGS"
+            + " " * 11
+            + "PLUGS"
+            + " " * 13
+            + "INDICATORS"
+            + " " * 2
+        )
         divider: str = "-" * len(header)
         print(divider)
         print(header)
@@ -155,7 +174,7 @@ class CodeGen:
                 "rotors": self.rotors[day],
                 "rings": self.alignments[day],
                 "plugs": self.plugs[day],
-                "indicators": self.indicators[day]
+                "indicators": self.indicators[day],
             }
             rows.append(row.copy())
         self.df = pd.DataFrame(rows)
@@ -169,11 +188,9 @@ class CodeGen:
         dest = Path(dest)
         print(f"Saving csv to {dest}...")
         self.df.to_csv(dest)
-        
-        
+
 
 if __name__ == "__main__":
     gen = CodeGen(seed=42, n_rotors=5, rotor_slots=3, extended=False)
     gen.print_table_terminal()
     gen.export_csv()
-
