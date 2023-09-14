@@ -172,7 +172,7 @@ class CodeGen:
             row: Dict[str, Any] = {
                 "day": self.n_dates - day,
                 "rotors": self.rotors[day],
-                "rings": self.alignments[day],
+                "rings": list(self.alignments[day]),
                 "plugs": self.plugs[day],
                 "indicators": self.indicators[day],
             }
