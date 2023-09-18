@@ -13,19 +13,9 @@ from typing import Any, Dict, List
 import numpy as np
 import pandas as pd
 
+from enigma.utils.constants import ROTOR_NAMES
+
 DAYS: int = 31
-ROTOR_NAMES: Dict[int, str] = {
-    0: "I",
-    1: "II",
-    2: "III",
-    3: "IV",
-    4: "V",
-    5: "VI",
-    6: "VII",
-    7: "VIII",
-    8: "IX",
-    9: "X,",
-}
 
 
 class CodeGen:
@@ -172,7 +162,7 @@ class CodeGen:
             row: Dict[str, Any] = {
                 "day": self.n_dates - day,
                 "rotors": self.rotors[day],
-                "rings": self.alignments[day],
+                "rings": list(self.alignments[day]),
                 "plugs": self.plugs[day],
                 "indicators": self.indicators[day],
             }
