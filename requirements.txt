@@ -2,11 +2,6 @@
 setuptools
 numpy
 pandas
-tqdm
 
 # linting
 black
-mypy
-
-# vision library
-opencv-python
