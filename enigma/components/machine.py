@@ -45,29 +45,6 @@ class Enigma:
         if print_cfg:
             self.print_cfg()
 
-    def print_cfg(self):
-        """Print configs."""
-        date_desc: str = "CONFIGURED BY DATE: "
-        date_msg: str = "{:02d}".format(self.date)
-
-        rotor_desc: str = "ROTORS IN USE: "
-        rotor_msg: str = " ".join([ROTOR_NAMES[r] for r in self.table["rotors"]])
-
-        align_desc: str = "ROTOR INITIAL POSITIONS: "
-        align_msg: str = " ".join(
-            ["{:02d}".format(r + 1 - 65) for r in self.table["rings"]]
-        )
-
-        plug_desc: str = "PLUGS: "
-        plug_msg: str = " ".join(
-            [f"{chr(key1)}{chr(key2)}" for key1, key2 in self.table["plugs"].items()]
-        )
-
-        ind_desc: str = "INDICATORS: "
-        ind_msg: str = " ".join(
-            [f"{chr(i1)}{chr(i2)}{chr(i3)}" for i1, i2, i3 in self.table["indicators"]]
-        )
-
     def adjust_machine(self):
         """Adjust machine according to the table entry."""
         # Add appropriate rotors.
@@ -116,6 +93,64 @@ class Enigma:
         table["plugs"] = eval(table_df.iloc[date]["plugs"])
         table["indicators"] = eval(table_df.iloc[date]["indicators"])
         return table
+    
+    def print_cfg(self):
+        """Print configs."""
+        print_ext: int = 4  # Extend of config printing table width.
+
+        date_desc: str = "CONFIGURED BY DATE"
+        date_msg: str = "{:02d}".format(self.date)
+
+        rotor_desc: str = "ROTORS IN USE"
+        rotor_msg: str = " ".join([ROTOR_NAMES[r] for r in self.table["rotors"]])
+
+        align_desc: str = "ROTOR INITIAL POSITIONS"
+        align_msg: str = " ".join(
+            ["{:02d}".format(r + 1 - 65) for r in self.table["rings"]]
+        )
+
+        plug_desc: str = "PLUGS"
+        plug_msg: str = " ".join(
+            [f"{chr(key1)}{chr(key2)}" for key1, key2 in self.table["plugs"].items()]
+        )
+
+        ind_desc: str = "INDICATORS"
+        ind_msg: str = " ".join(
+            [f"{chr(i1)}{chr(i2)}{chr(i3)}" for i1, i2, i3 in self.table["indicators"]]
+        )
+        descs: List[str] = [date_desc, rotor_desc, align_desc, plug_desc, ind_desc]
+        msgs: List[str] = [date_msg, rotor_msg, align_msg, plug_msg, ind_msg]
+        longest_desc: int = max([len(desc) for desc in descs])
+        longest_msg: int = max([len(msg) for msg in msgs])
+
+        title: str = "ENIGMA CONFIGURATION LOADED"
+        longest_all: int = max(len(title), longest_desc + longest_msg + 1)  # +1 for the space between desc and msg.
+
+        # Print table title.
+        title_blanks: int = longest_all - len(title) + print_ext
+        title_padding_left: int = title_blanks // 2
+        assert title_padding_left >= 0
+        title_padding_right: int = title_blanks - title_padding_left
+        divider: str = "+" + "-" * (longest_all + print_ext) + "+"
+        desc_ext: int = print_ext // 2
+        msg_ext: int = print_ext - desc_ext
+
+        print(divider)
+        print("|" + " " * title_padding_left + title + " " * title_padding_right + "|") 
+        print(divider)
+        for desc, msg in zip(descs, msgs):
+            desc_blanks: int = longest_desc - len(desc) + desc_ext 
+            desc_left: int = desc_blanks // 2
+            desc_right: int = desc_blanks - desc_left
+
+            msg_blanks: int = longest_msg - len(msg) + msg_ext
+            msg_left: int = msg_blanks // 2
+            msg_right: int = msg_blanks - msg_left
+
+            print("|" + " " * desc_left + desc + " "* desc_right + "|" +  " " * msg_left + msg +" " * msg_right + "|")
+        print(divider)
+        
+
 
     def rotate_rotors(self):
         # Rotate all rotors in use. From right to left.
@@ -151,7 +186,6 @@ class Enigma:
             output_char = chr(output_index + 65)
             output_str += output_char
 
-        print(output_str)
         return output_str
 
 
