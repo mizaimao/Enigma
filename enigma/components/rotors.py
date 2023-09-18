@@ -26,7 +26,7 @@ class Rotor:
 
         for i, in_char in enumerate(sorted_keys):
             self.arr[0][i] = mapping[in_char]
-            self.arr[1][in_char] = i
+            self.arr[1][mapping[in_char]] = i
 
             self.loc[in_char] = i
 
@@ -45,13 +45,18 @@ class Rotor:
         return False
 
     def input(self, input_index: int, reverse: bool) -> int:
-        """Get output index."""
-        return self.arr[1 if reverse else 0][(input_index + self.current) % 26]
+        """Core function. Get output index."""
+        internal_index: int = self.arr[1 if reverse else 0][
+            ((26 - self.current) % 26 + input_index) % 26
+        ]
+        adjusted_index: int = abs(internal_index + self.current) % 26
+        return adjusted_index
 
 
 class Reflector:
     def __init__(self, wiring: str):
         self.mapping: Dict[int, int] = {k - 65: v - 65 for k, v in eval(wiring).items()}
 
-    def input(self, number: int) -> int:
-        return self.mapping[number]
+    def input(self, input_index: int) -> int:
+        """Core function. Input index is the absolute position on the wheel-like structure."""
+        return self.mapping[input_index]

@@ -7,13 +7,18 @@ import pandas as pd
 import numpy as np
 
 from enigma.components.rotors import Rotor, Reflector
+from enigma.utils.constants import ROTOR_NAMES
 
 
 class Enigma:
     """Enigma M3 emulator."""
 
     def __init__(
-        self, config_path: Path = None, table_path: Path = None, date: int = 1
+        self,
+        config_path: Path = None,
+        table_path: Path = None,
+        date: int = 1,
+        print_cfg: bool = False,
     ):
         """
         Load configuration file and table.
@@ -26,14 +31,42 @@ class Enigma:
         if table_path is None:
             table_path = Path(__file__).parent.parent.joinpath("tables", "default.csv")
 
+        self.date: int = date
+
         self.rotors: List[Rotor]  # Rotors in use.
         self.all_rotors: List[Rotor]
         self.reflector: Reflector
         self.all_rotors, self.reflector = self.load_config(config_path)
-        self.table: Dict[str, Any] = self.load_table(table_path, date)
+        self.table: Dict[str, Any] = self.load_table(table_path)
 
         # Apply table settings to machine. Reduces number of rotors.
         self.adjust_machine()
+
+        if print_cfg:
+            self.print_cfg()
+
+    def print_cfg(self):
+        """Print configs."""
+        date_desc: str = "CONFIGURED BY DATE: "
+        date_msg: str = "{:02d}".format(self.date)
+
+        rotor_desc: str = "ROTORS IN USE: "
+        rotor_msg: str = " ".join([ROTOR_NAMES[r] for r in self.table["rotors"]])
+
+        align_desc: str = "ROTOR INITIAL POSITIONS: "
+        align_msg: str = " ".join(
+            ["{:02d}".format(r + 1 - 65) for r in self.table["rings"]]
+        )
+
+        plug_desc: str = "PLUGS: "
+        plug_msg: str = " ".join(
+            [f"{chr(key1)}{chr(key2)}" for key1, key2 in self.table["plugs"].items()]
+        )
+
+        ind_desc: str = "INDICATORS: "
+        ind_msg: str = " ".join(
+            [f"{chr(i1)}{chr(i2)}{chr(i3)}" for i1, i2, i3 in self.table["indicators"]]
+        )
 
     def adjust_machine(self):
         """Adjust machine according to the table entry."""
@@ -71,13 +104,13 @@ class Enigma:
 
         return rotors, reflector
 
-    def load_table(self, table_path: Path, date: int) -> Dict[str, Any]:
+    def load_table(self, table_path: Path) -> Dict[str, Any]:
         table_path = Path(table_path)
         assert table_path.is_file(), f"Table at {table_path} not found."
         table: Dict[str, Any] = {}
 
         table_df: pd.DataFrame = pd.read_csv(table_path)
-        date = table_df.shape[0] - date
+        date: int = table_df.shape[0] - self.date
         table["rotors"] = eval(table_df.iloc[date]["rotors"])
         table["rings"] = eval(table_df.iloc[date]["rings"])
         table["plugs"] = eval(table_df.iloc[date]["plugs"])
@@ -85,7 +118,8 @@ class Enigma:
         return table
 
     def rotate_rotors(self):
-        carry: int = 1
+        # Rotate all rotors in use. From right to left.
+        carry: bool = True
         for rotor in self.rotors[::-1]:
             if carry:
                 carry = rotor.rotate()
@@ -101,18 +135,20 @@ class Enigma:
             self.rotate_rotors()
             # From right to left.
             input_index: int = ord(input_char) - 65
+
             for rotor in self.rotors[::-1]:
                 input_index = rotor.input(input_index, reverse=False)
 
             # Reflector.
-            input_index = self.reflector.input(input_index)
+            reflected_index: int = self.reflector.input(input_index)
 
             # From left to right.
+            output_index: int = reflected_index
             for rotor in self.rotors:
-                input_index = rotor.input(input_index, reverse=True)
+                output_index = rotor.input(output_index, reverse=True)
 
             # Convert to character.
-            output_char = chr(input_index + 65)
+            output_char = chr(output_index + 65)
             output_str += output_char
 
         print(output_str)
@@ -120,7 +156,10 @@ class Enigma:
 
 
 if __name__ == "__main__":
+    input_message: str = "CHICKENMIZAIMAO"
+    e = Enigma(print_cfg=True)
+    encoded_message: str = e.input(input_message)
     e = Enigma()
-    e.input("AAAAAAAA")
-    e = Enigma()
-    e.input("BTBONYQF")
+    decoded_message: str = e.input(encoded_message)
+
+    print(f"{input_message} -> {encoded_message} -> {decoded_message}")
