@@ -38,6 +38,9 @@ class Enigma:
         self.reflector: Reflector
         self.all_rotors, self.reflector = self.load_config(config_path)
         self.table: Dict[str, Any] = self.load_table(table_path)
+        self.plugs: Dict[
+            int, int
+        ] = None  # Will be configured in self.adjust_machine().
 
         # Apply table settings to machine. Reduces number of rotors.
         self.adjust_machine()
@@ -55,6 +58,12 @@ class Enigma:
         for rotor, position in zip(self.rotors, self.table["rings"]):
             rotor.tune(position - 65)
         # Add plugs.
+        assert self.plugs is None
+        self.plugs = {}
+        for p1, p2 in self.table["plugs"].items():
+            assert p1 != p2, f"Plug cannot connect identical characters: {p1} -> {p2}."
+            self.plugs[p1] = p2
+            self.plugs[p2] = p1
 
     def load_config(self, config_path: Path) -> Tuple[List[Rotor], Reflector]:
         config_path = Path(config_path)
@@ -93,7 +102,7 @@ class Enigma:
         table["plugs"] = eval(table_df.iloc[date]["plugs"])
         table["indicators"] = eval(table_df.iloc[date]["indicators"])
         return table
-    
+
     def print_cfg(self):
         """Print configs."""
         print_ext: int = 4  # Extend of config printing table width.
@@ -124,7 +133,9 @@ class Enigma:
         longest_msg: int = max([len(msg) for msg in msgs])
 
         title: str = "ENIGMA CONFIGURATION LOADED"
-        longest_all: int = max(len(title), longest_desc + longest_msg + 1)  # +1 for the space between desc and msg.
+        longest_all: int = max(
+            len(title), longest_desc + longest_msg + 1
+        )  # +1 for the space between desc and msg.
 
         # Print table title.
         title_blanks: int = longest_all - len(title) + print_ext
@@ -136,10 +147,10 @@ class Enigma:
         msg_ext: int = print_ext - desc_ext
 
         print(divider)
-        print("|" + " " * title_padding_left + title + " " * title_padding_right + "|") 
+        print("|" + " " * title_padding_left + title + " " * title_padding_right + "|")
         print(divider)
         for desc, msg in zip(descs, msgs):
-            desc_blanks: int = longest_desc - len(desc) + desc_ext 
+            desc_blanks: int = longest_desc - len(desc) + desc_ext
             desc_left: int = desc_blanks // 2
             desc_right: int = desc_blanks - desc_left
 
@@ -147,10 +158,18 @@ class Enigma:
             msg_left: int = msg_blanks // 2
             msg_right: int = msg_blanks - msg_left
 
-            print("|" + " " * desc_left + desc + " "* desc_right + "|" +  " " * msg_left + msg +" " * msg_right + "|")
+            print(
+                "|"
+                + " " * desc_left
+                + desc
+                + " " * desc_right
+                + "|"
+                + " " * msg_left
+                + msg
+                + " " * msg_right
+                + "|"
+            )
         print(divider)
-        
-
 
     def rotate_rotors(self):
         # Rotate all rotors in use. From right to left.
@@ -168,8 +187,15 @@ class Enigma:
         for input_char in input_str:
             # Rotate rotors for each character.
             self.rotate_rotors()
+
+            # Before rerouting via plugs.
+            mapped_char: int = ord(input_char)
+            # After.
+            if self.plugs and mapped_char in self.plugs:
+                mapped_char = self.plugs[mapped_char]
+
             # From right to left.
-            input_index: int = ord(input_char) - 65
+            input_index: int = mapped_char - 65
 
             for rotor in self.rotors[::-1]:
                 input_index = rotor.input(input_index, reverse=False)
@@ -183,7 +209,10 @@ class Enigma:
                 output_index = rotor.input(output_index, reverse=True)
 
             # Convert to character.
-            output_char = chr(output_index + 65)
+            output_index += 65
+            output_char: str = chr(output_index)
+            if self.plugs and output_index in self.plugs:
+                output_char = chr(self.plugs[output_index])
             output_str += output_char
 
         return output_str
