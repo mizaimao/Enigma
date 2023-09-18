@@ -121,7 +121,7 @@ class CodeGen:
             rotors: str = " ".join([ROTOR_NAMES[r] for r in self.rotors[i]])
             rotors += " " * (rotor_string_len - len(rotors))  # Add right padding.
             alignments: str = " ".join(
-                ["{:02d}".format(r + 1) for r in self.alignments[i]]
+                ["{:02d}".format(r + 1 - 65) for r in self.alignments[i]]
             )
             plugs: str = " ".join(
                 [f"{chr(key1)}{chr(key2)}" for key1, key2 in self.plugs[i].items()]
